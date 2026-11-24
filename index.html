@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f6fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="電車の準備時間">
+  <title>電車の準備時間</title>
+  <style>
+    :root{--bg:#f3f6fb;--card:#fff;--text:#172033;--muted:#667085;--line:#e3e8f0;--primary:#2563eb;--blueSoft:#eaf1ff;--orangeSoft:#fff3dc;--greenSoft:#e5f8f1}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(160deg,#eef4ff 0%,var(--bg) 42%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    .app{max-width:680px;margin:auto;padding:calc(22px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+    header{margin-bottom:18px}h1{font-size:clamp(25px,7vw,34px);margin:0 0 7px;letter-spacing:-.03em}header p{color:var(--muted);margin:0;line-height:1.55}
+    .card{background:var(--card);padding:20px;border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 30px rgba(30,55,90,.06);margin-top:15px}
+    .section-title{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin:0 0 12px}.label{display:block;font-weight:750;margin-bottom:9px}
+    .time-input{width:100%;font:inherit;font-size:27px;font-weight:800;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+    .time-input:focus,.num-input:focus{outline:3px solid rgba(37,99,235,.2);border-color:var(--primary)}
+    .results{padding-top:8px;padding-bottom:8px}.row{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:12px;padding:15px 4px}.row+.row{border-top:1px solid var(--line)}
+    .icon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:21px}.wake{background:var(--orangeSoft)}.home{background:var(--blueSoft)}.train{background:var(--greenSoft)}
+    .name{font-weight:750}.sub{font-size:13px;color:var(--muted);margin-top:2px}.result-time{font-size:clamp(25px,7vw,32px);font-weight:850;font-variant-numeric:tabular-nums}
+    .settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{background:var(--bg);padding:14px;border-radius:14px}.field label{font-size:14px;font-weight:750;display:block;line-height:1.4;margin-bottom:9px}
+    .input-wrap{display:flex;align-items:center;gap:8px}.num-input{width:100%;min-width:0;font:inherit;font-size:19px;font-weight:750;color:var(--text);border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px}.unit{color:var(--muted);font-size:14px;font-weight:650}
+    .note{font-size:13px;color:var(--muted);text-align:center;margin:14px 0 0;line-height:1.5}.error{color:#b42318;background:#fef3f2;padding:10px 12px;border-radius:10px;margin-top:12px;display:none}
+    @media(max-width:480px){.settings{grid-template-columns:1fr}.row{grid-template-columns:50px 1fr auto}.card{padding:16px}.result-time{font-size:25px}}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#1b2432;--text:#f2f4f7;--muted:#aab4c3;--line:#344054;--blueSoft:#20365f;--orangeSoft:#49391a;--greenSoft:#153d34}body{background:linear-gradient(160deg,#17233a 0%,#111827 42%)}.time-input,.num-input{color-scheme:dark}.card{box-shadow:none}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header><h1>電車の準備時間</h1><p>乗りたい電車から、自宅を出る時刻と起床時刻を逆算します。</p></header>
+    <section class="card">
+      <label class="label" for="trainTime">電車の発車時刻</label>
+      <input class="time-input" id="trainTime" type="time" value="08:30">
+      <div id="error" class="error" role="alert"></div>
+    </section>
+    <section class="card results" aria-live="polite">
+      <div class="row"><div class="icon wake">⏰</div><div><div class="name">起床</div><div class="sub">準備を開始</div></div><div id="wakeTime" class="result-time">7:45</div></div>
+      <div class="row"><div class="icon home">🏠</div><div><div class="name">自宅出発</div><div class="sub">駅へ向かう</div></div><div id="leaveTime" class="result-time">8:15</div></div>
+      <div class="row"><div class="icon train">🚃</div><div><div class="name">電車発車</div><div class="sub">乗車予定</div></div><div id="departTime" class="result-time">8:30</div></div>
+    </section>
+    <section class="card">
+      <h2 class="section-title">所要時間の設定</h2>
+      <div class="settings">
+        <div class="field"><label for="stationMinutes">自宅から駅まで</label><div class="input-wrap"><input class="num-input" id="stationMinutes" type="number" inputmode="numeric" min="0" max="300" value="15"><span class="unit">分</span></div></div>
+        <div class="field"><label for="readyMinutes">起床から自宅出発まで</label><div class="input-wrap"><input class="num-input" id="readyMinutes" type="number" inputmode="numeric" min="0" max="600" value="30"><span class="unit">分</span></div></div>
+      </div>
+    </section>
+    <p class="note">変更内容はこのブラウザに自動保存されます。</p>
+  </main>
+  <script>
+    const train = document.getElementById('trainTime');
+    const station = document.getElementById('stationMinutes');
+    const ready = document.getElementById('readyMinutes');
+    const wake = document.getElementById('wakeTime');
+    const leave = document.getElementById('leaveTime');
+    const depart = document.getElementById('departTime');
+    const error = document.getElementById('error');
+    const storageKey = 'trainPlannerSettingsV1';
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      if (/^([01]\d|2[0-3]):[0-5]\d$/.test(saved.train || '')) train.value = saved.train;
+      if (Number.isFinite(saved.station)) station.value = saved.station;
+      if (Number.isFinite(saved.ready)) ready.value = saved.ready;
+    } catch (_) {}
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const formatMinutes = total => {
+      total = ((total % 1440) + 1440) % 1440;
+      return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+    };
+
+    function updateSchedule() {
+      error.style.display = 'none';
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(train.value)) {
+        error.textContent = '電車の発車時刻を入力してください。';
+        error.style.display = 'block';
+        return;
+      }
+      let stationValue = Number(station.value);
+      let readyValue = Number(ready.value);
+      if (!Number.isFinite(stationValue) || !Number.isFinite(readyValue)) {
+        error.textContent = '所要時間を数字で入力してください。';
+        error.style.display = 'block';
+        return;
+      }
+      stationValue = clamp(Math.round(stationValue), 0, 300);
+      readyValue = clamp(Math.round(readyValue), 0, 600);
+      station.value = stationValue;
+      ready.value = readyValue;
+      const [hours, minutes] = train.value.split(':').map(Number);
+      const trainTotal = hours * 60 + minutes;
+      const leaveTotal = trainTotal - stationValue;
+      const wakeTotal = leaveTotal - readyValue;
+      depart.textContent = formatMinutes(trainTotal);
+      leave.textContent = formatMinutes(leaveTotal);
+      wake.textContent = formatMinutes(wakeTotal);
+      try { localStorage.setItem(storageKey, JSON.stringify({train: train.value, station: stationValue, ready: readyValue})); } catch (_) {}
+    }
+
+    [train, station, ready].forEach(element => element.addEventListener('input', updateSchedule));
+    updateSchedule();
+  </script>
+</body>
+</html>
